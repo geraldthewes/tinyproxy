@@ -17,6 +17,8 @@ Instructions
 To use do
 
 ```
+go build
+
 ./tinyproxy -port 9999 -remote https://www.apple.com:443
 ```
 
