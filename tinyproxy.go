@@ -7,7 +7,9 @@ import (
     "net/http"
 	"os"
 	"strings"
+	"bytes"
 	"net/url"
+    "compress/gzip"		
 )
 
 // Helper function to copy headers from one map to another
@@ -128,18 +130,59 @@ func logRequest(r *http.Request, logger *log.Logger) {
     }
 }
 
+
+// isGzipContent checks if the content encoding is gzip.
+func isGzipContent(encoding string) bool {
+    return strings.Contains(strings.ToLower(encoding), "gzip")
+}
+
+// stringToReader converts a string to an io.Reader.
+func stringToReader(s string) *strings.Reader {
+    return strings.NewReader(s)
+}
+
 func logResponse(resp *http.Response, logger *log.Logger) {
+    // Read the entire body into a buffer
+    var buf bytes.Buffer
+    _, err := io.Copy(&buf, resp.Body)
+    if err != nil {
+        logger.Printf("Error reading response body: %v\n", err)
+        return
+    }
+
+    // Restore resp.Body with the original data
+    resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))		
+		
     logger.Printf("Status Code: %d\n", resp.StatusCode)
     logger.Printf("Headers:\n")
     for k, v := range resp.Header {
         logger.Printf("- %s: %v\n", k, v)
     }
-    body, _ := io.ReadAll(resp.Body)
-    logger.Printf("Body: %s\n", string(body))
-    resp.Body = io.NopCloser(stringToReader(string(body)))
+
+    var bodyBytes []byte
+
+    // Check if the content is gzip-encoded
+    isGzip := strings.Contains(strings.ToLower(resp.Header.Get("Content-Encoding")), "gzip")
+		
+		
+	if isGzip {
+       reader, err := gzip.NewReader(bytes.NewReader(buf.Bytes()))
+        if err != nil {
+            logger.Printf("Error creating gzip reader: %v\n", err)
+            return
+        }
+        defer reader.Close()
+        bodyBytes, err = io.ReadAll(reader)
+        if err != nil {
+            logger.Printf("Error decompressing gzip body: %v\n", err)
+            return
+        }			
+    } else {
+        bodyBytes = buf.Bytes()
+    }
+
+		
+    logger.Printf("Body: %s\n", string(bodyBytes))
 }
 
 
-func stringToReader(s string) *strings.Reader {
-    return strings.NewReader(s)
-}
