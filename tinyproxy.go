@@ -78,7 +78,7 @@ func main() {
             w.WriteHeader(http.StatusInternalServerError)
             return
         }
-			defer resp.Body.Close()
+		defer resp.Body.Close()
 
 		// Copy headers from the remote response to the client response
 		copyHeaders(w.Header(), resp.Header)
@@ -128,6 +128,19 @@ func logRequest(r *http.Request, logger *log.Logger) {
             logger.Printf("- %s: %v\n", k, v)
         }
     }
+
+    // Read the entire body into a buffer
+    var buf bytes.Buffer
+    _, err := io.Copy(&buf, r.Body)
+    if err != nil {
+        logger.Printf("Error reading request body: %v\n", err)
+        return
+    }
+
+    // Restore r.Body with the original data
+	r.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
+
+		logger.Printf("Body: %s\n", string(buf.Bytes()))	
 }
 
 
