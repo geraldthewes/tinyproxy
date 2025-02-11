@@ -57,7 +57,7 @@ func main() {
 
     handler := func(w http.ResponseWriter, r *http.Request) {
         // Log the incoming request
-        logger.Printf("\n=== Incoming Request ===\n")
+        logger.Printf("\n\n=== Incoming Request ===\n")
         logRequest(r, logger)
 
         // Forward the request to remote
