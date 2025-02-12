@@ -80,8 +80,9 @@ func main() {
         }
 		defer resp.Body.Close()
 
-		// Copy headers from the remote response to the client response
+			// Copy headers from the remote response to the client response
 		copyHeaders(w.Header(), resp.Header)
+		w.WriteHeader(resp.StatusCode)	
 			
 
         // Log the response from remote
